@@ -1,0 +1,34 @@
+# Build
+build/
+bin/
+
+# Executables
+*.exe
+*.out
+
+# Object files
+*.o
+*.obj
+
+# Libraries
+*.a
+*.lib
+*.dll
+
+# Debug
+*.pdb
+
+# VS Code
+.vscode/
+
+# SQLite
+database/*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Coverage
+*.gcda
+*.gcno
+coverage.info
+coverage/
