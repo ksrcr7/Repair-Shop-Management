@@ -18,6 +18,7 @@ enable_testing()
 add_library(RepairShopManagementSystemLib
     src/Device.cpp
     src/StringUtils.cpp
+    src/Customer.cpp
 )
 
 target_include_directories(
@@ -37,6 +38,7 @@ target_link_libraries(
 
 add_executable(RepairShopTests
     tests/DeviceTests.cpp
+    tests/CustomerTests.cpp
 )
 
 target_link_libraries(
@@ -45,6 +47,8 @@ target_link_libraries(
     RepairShopManagementSystemLib
     GTest::gtest_main
 )
+
+
 
 include(GoogleTest)
 gtest_discover_tests(RepairShopTests)
