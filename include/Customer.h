@@ -1,10 +1,16 @@
+#pragma once
+
 #include <string>
 #include <sqlite3.h>
 #include "Device.h"
 
 
 
+
+
 class Customer {
+
+    friend class DatabaseRepairShop;
     private:
         sqlite_int64 id;
         std::string name;
