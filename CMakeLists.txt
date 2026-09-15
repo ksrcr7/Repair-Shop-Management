@@ -4,6 +4,8 @@ project(RepairShopManagementSystem)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(SQLite3 REQUIRED)
+
 include (FetchContent) 
 FetchContent_Declare(
     google_test
@@ -19,11 +21,18 @@ add_library(RepairShopManagementSystemLib
     src/Device.cpp
     src/StringUtils.cpp
     src/Customer.cpp
+    src/DatabaseRepairShop.cpp
 )
 
 target_include_directories(
     RepairShopManagementSystemLib
     PUBLIC include
+)
+
+target_link_libraries(
+    RepairShopManagementSystemLib
+    PRIVATE
+    SQLite::SQLite3
 )
 
 add_executable(RepairShopManagementSystem
@@ -39,6 +48,7 @@ target_link_libraries(
 add_executable(RepairShopTests
     tests/DeviceTests.cpp
     tests/CustomerTests.cpp
+    tests/DatabaseTests.cpp
 )
 
 target_link_libraries(
