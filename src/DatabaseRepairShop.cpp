@@ -1,4 +1,5 @@
 #include "DatabaseRepairShop.h"
+#include "SQLiteUtils.h"
 
 void DatabaseRepairShop::createDeviceTable() {
     const char* sql = "CREATE TABLE IF NOT EXISTS devices ("
@@ -74,4 +75,39 @@ DatabaseRepairShop::~DatabaseRepairShop() {
         sqlite3_close(db);
         db = nullptr;
     }
+}
+
+void DatabaseRepairShop::addCustomer(Customer &customer) {
+    const char* sql = "INSERT INTO customers (name,email,phonenumber) VALUES (?,?,?);";
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 1, customer.getName().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 2, customer.getEmail().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 3, customer.getPhoneNumber().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    sqlite_int64 newId = sqlite3_last_insert_rowid(db);
+    customer.setId(newId);
+
 }

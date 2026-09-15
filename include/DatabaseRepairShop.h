@@ -1,3 +1,5 @@
+#pragma once
+
 #include <sqlite3.h>
 #include "Device.h"
 #include "Customer.h"
@@ -18,5 +20,7 @@ class DatabaseRepairShop {
         ~DatabaseRepairShop();
         DatabaseRepairShop(const DatabaseRepairShop&) = delete;
         DatabaseRepairShop& operator=(const DatabaseRepairShop&) = delete;
+
+        void addCustomer(Customer& customer);
 
 };
