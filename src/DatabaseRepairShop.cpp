@@ -111,3 +111,42 @@ void DatabaseRepairShop::addCustomer(Customer &customer) {
     customer.setId(newId);
 
 }
+
+void DatabaseRepairShop::addDevice(sqlite_int64 customerId, Device &device) {
+    const char* sql = "INSERT INTO devices (customerId, brand, model, serialNumber) VALUES (?,?,?,?);";
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, customerId);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 2, device.getBrand().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 3, device.getModel().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 4, device.getSerialNumber().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    sqlite_int64 newId = sqlite3_last_insert_rowid(db);
+    device.setId(newId);
+}

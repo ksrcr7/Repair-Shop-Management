@@ -22,5 +22,6 @@ class DatabaseRepairShop {
         DatabaseRepairShop& operator=(const DatabaseRepairShop&) = delete;
 
         void addCustomer(Customer& customer);
+        void addDevice(sqlite_int64 customerId, Device& device);
 
 };
