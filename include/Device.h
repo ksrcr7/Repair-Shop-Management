@@ -9,6 +9,8 @@
 
 
 class Device {
+    friend class DatabaseRepairShop;
+    
     private:
         sqlite3_int64 id;
         std::string brand;
