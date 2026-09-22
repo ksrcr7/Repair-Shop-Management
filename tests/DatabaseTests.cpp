@@ -46,3 +46,22 @@ TEST_F(DatabaseRepairShopTest, UniqueSerialNumberConstraint) {
     EXPECT_NO_THROW(db.addDevice(customer.getId(), device1));
     EXPECT_THROW(db.addDevice(customer.getId(), device2), std::runtime_error);
 }
+
+TEST_F(DatabaseRepairShopTest, GetCustomerByIdSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+
+    auto retrievedCustomer = db.getCustomerById(customer.getId());
+   
+    ASSERT_TRUE(retrievedCustomer.has_value());
+    EXPECT_EQ (retrievedCustomer->getId(),customer.getId());
+    EXPECT_EQ(retrievedCustomer->getEmail(),customer.getEmail());
+    EXPECT_EQ(retrievedCustomer->getName(),customer.getName());
+    EXPECT_EQ(retrievedCustomer->getPhoneNumber(),customer.getPhoneNumber());
+}
+
+TEST_F(DatabaseRepairShopTest, GetCustomerByIdReturnsEmptyForNonExistentCustomer) {
+    auto retrievedCustomer = db.getCustomerById(999);
+    ASSERT_FALSE(retrievedCustomer.has_value());
+
+}
