@@ -150,3 +150,38 @@ void DatabaseRepairShop::addDevice(sqlite_int64 customerId, Device &device) {
     sqlite_int64 newId = sqlite3_last_insert_rowid(db);
     device.setId(newId);
 }
+
+std::optional<Customer> DatabaseRepairShop::getCustomerById(sqlite3_int64 customerId) {
+
+    const char* sql = "SELECT id, name, email, phoneNumber FROM customers WHERE id = ?;";
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, customerId);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc == SQLITE_ROW) {
+        sqlite3_int64 id = sqlite3_column_int64(stmt.get(), 0);
+        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1));
+        const char* email = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
+        const char* phoneNumber = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3));
+
+        Customer customer(name, email, phoneNumber);
+        customer.setId(id);
+        return customer;
+    } 
+    
+    else if (rc == SQLITE_DONE) {
+        return std::nullopt; 
+    } 
+    
+    throwSQLiteError();
+}
