@@ -2,6 +2,7 @@
 
 #include <sqlite3.h>
 #include <optional>
+#include <vector>
 #include "Device.h"
 #include "Customer.h"
 
@@ -25,5 +26,7 @@ class DatabaseRepairShop {
         void addCustomer(Customer& customer);
         void addDevice(sqlite3_int64 customerId, Device& device);
         std::optional<Customer> getCustomerById(sqlite3_int64 customerId);
+        std::vector <Device> getDevicesByCustomerId(sqlite3_int64 id);
+
 
 };

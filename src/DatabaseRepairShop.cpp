@@ -185,3 +185,40 @@ std::optional<Customer> DatabaseRepairShop::getCustomerById(sqlite3_int64 custom
     
     throwSQLiteError();
 }
+
+std::vector<Device> DatabaseRepairShop::getDevicesByCustomerId(sqlite3_int64 id) {
+
+    std::vector<Device> result;
+    const char* sql = "SELECT id, brand, model, serialNumber FROM devices WHERE customerId = ?;";
+    sqlite3_stmt* rawStmt = nullptr;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, id);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    while ((rc = sqlite3_step(stmt.get())) == SQLITE_ROW) {
+        sqlite3_int64 deviceId = sqlite3_column_int64(stmt.get(), 0);
+        const char* brand = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1));
+        const char* model = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
+        const char* serialNumber = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3));
+
+        Device device(brand, model, serialNumber);
+        device.setId(deviceId);
+        result.push_back(device);
+    }
+
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return result;
+    
+}
