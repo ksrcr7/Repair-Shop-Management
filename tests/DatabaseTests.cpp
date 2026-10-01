@@ -65,3 +65,34 @@ TEST_F(DatabaseRepairShopTest, GetCustomerByIdReturnsEmptyForNonExistentCustomer
     ASSERT_FALSE(retrievedCustomer.has_value());
 
 }
+
+TEST_F(DatabaseRepairShopTest, GetDevicesByCustomerIdSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device1("Samsung", "Galaxy S21", "SN123456789");
+    Device device2("Apple", "iPhone 12", "SN987654321");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device1));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device2));
+
+    auto devices = db.getDevicesByCustomerId(customer.getId());
+    ASSERT_EQ(devices.size(), 2);
+    EXPECT_EQ(devices[0].getBrand(), device1.getBrand());
+    EXPECT_EQ(devices[0].getModel(), device1.getModel());
+    EXPECT_EQ(devices[0].getSerialNumber(), device1.getSerialNumber());
+    EXPECT_EQ(devices[1].getBrand(), device2.getBrand());
+    EXPECT_EQ(devices[1].getModel(), device2.getModel());
+    EXPECT_EQ(devices[1].getSerialNumber(), device2.getSerialNumber());
+}
+
+TEST_F(DatabaseRepairShopTest, GetDevicesByCustomerIdReturnsEmptyListWhenCustomerHasNoDevices) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    auto devices = db.getDevicesByCustomerId(customer.getId());
+    ASSERT_TRUE(devices.empty());
+}
+
+TEST_F(DatabaseRepairShopTest, GetDevicesByCustomerIdReturnsEmptyListForNonExistentCustomer) {
+    auto devices = db.getDevicesByCustomerId(9999);
+
+    EXPECT_TRUE(devices.empty());
+}
