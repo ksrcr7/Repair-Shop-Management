@@ -247,3 +247,27 @@ bool DatabaseRepairShop::deleteCustomerById(sqlite3_int64 customerId) {
 
     return sqlite3_changes(db) > 0;
 }
+
+bool DatabaseRepairShop::deleteDeviceById(sqlite3_int64 deviceId) {
+    const char* sql = "DELETE FROM devices WHERE id = ?;";
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, deviceId);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return sqlite3_changes(db) > 0;
+
+}
