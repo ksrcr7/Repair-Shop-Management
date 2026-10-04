@@ -96,3 +96,28 @@ TEST_F(DatabaseRepairShopTest, GetDevicesByCustomerIdReturnsEmptyListForNonExist
 
     EXPECT_TRUE(devices.empty());
 }
+
+TEST_F(DatabaseRepairShopTest, DeleteCustomerByIdSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_TRUE(db.deleteCustomerById(customer.getId()));
+
+    auto retrievedCustomer = db.getCustomerById(customer.getId());
+    ASSERT_FALSE(retrievedCustomer.has_value());
+}
+
+TEST_F(DatabaseRepairShopTest, DeleteCustomerByIdReturnsFalseForNonExistentCustomer) {
+    EXPECT_FALSE(db.deleteCustomerById(9999));
+}
+
+TEST_F(DatabaseRepairShopTest, CanNotDeleteCustomerWithDevices) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    EXPECT_THROW(db.deleteCustomerById(customer.getId()), std::runtime_error);
+
+    auto retrievedCustomer = db.getCustomerById(customer.getId());
+    ASSERT_TRUE(retrievedCustomer.has_value());
+    EXPECT_EQ(retrievedCustomer->getId(), customer.getId());
+}
