@@ -27,6 +27,7 @@ class DatabaseRepairShop {
         void addDevice(sqlite3_int64 customerId, Device& device);
         std::optional<Customer> getCustomerById(sqlite3_int64 customerId);
         std::vector <Device> getDevicesByCustomerId(sqlite3_int64 id);
+        bool deleteCustomerById(sqlite3_int64 customerId);
 
 
 };

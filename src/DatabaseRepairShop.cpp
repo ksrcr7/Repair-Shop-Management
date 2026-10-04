@@ -112,6 +112,8 @@ void DatabaseRepairShop::addCustomer(Customer &customer) {
 
 }
 
+
+
 void DatabaseRepairShop::addDevice(sqlite_int64 customerId, Device &device) {
     const char* sql = "INSERT INTO devices (customerId, brand, model, serialNumber) VALUES (?,?,?,?);";
     sqlite3_stmt* rawStmt = nullptr;
@@ -221,4 +223,27 @@ std::vector<Device> DatabaseRepairShop::getDevicesByCustomerId(sqlite3_int64 id)
 
     return result;
     
+}
+
+bool DatabaseRepairShop::deleteCustomerById(sqlite3_int64 customerId) {
+    const char* sql = "DELETE FROM customers WHERE id = ?;";
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, customerId);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return sqlite3_changes(db) > 0;
 }
