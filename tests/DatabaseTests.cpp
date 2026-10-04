@@ -121,3 +121,17 @@ TEST_F(DatabaseRepairShopTest, CanNotDeleteCustomerWithDevices) {
     ASSERT_TRUE(retrievedCustomer.has_value());
     EXPECT_EQ(retrievedCustomer->getId(), customer.getId());
 }
+
+TEST_F(DatabaseRepairShopTest, DeleteDeviceByIdSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    EXPECT_TRUE(db.deleteDeviceById(device.getId()));
+    EXPECT_TRUE(db.getDevicesByCustomerId(customer.getId()).empty());
+    EXPECT_TRUE(db.getCustomerById(customer.getId()).has_value());
+}
+
+TEST_F(DatabaseRepairShopTest, DeleteDeviceByIdReturnsFalseForNonExistentDevice) {
+    EXPECT_FALSE(db.deleteDeviceById(9999));
+}
