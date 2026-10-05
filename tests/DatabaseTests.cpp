@@ -164,4 +164,38 @@ TEST_F(DatabaseRepairShopTest, UpdateCustomerWithDuplicateEmailThrowsError) {
     EXPECT_EQ(updatedCustomer1->getEmail(), "john.doe@gmail.com");
 }
 
+TEST_F(DatabaseRepairShopTest, UpdateDeviceSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    device.setBrand("Apple");
+    device.setModel("iPhone 13");
+    device.setSerialNumber("SN987654321");
+    EXPECT_TRUE(db.updateDevice(device));
 
+    auto updatedDevice = db.getDevicesByCustomerId(customer.getId());
+    ASSERT_EQ(updatedDevice.size(), 1);
+    EXPECT_EQ(updatedDevice[0].getId(), device.getId());
+    EXPECT_EQ(updatedDevice[0].getBrand(), "Apple");
+    EXPECT_EQ(updatedDevice[0].getModel(), "iPhone 13");
+    EXPECT_EQ(updatedDevice[0].getSerialNumber(), "SN987654321");
+}
+
+TEST_F(DatabaseRepairShopTest, UpdateDeviceWithDuplicateSerialNumberThrowsError) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device1("Samsung", "Galaxy S21", "SN123456789");
+    Device device2("Apple", "iPhone 12", "SN987654321");
+
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device1));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device2));
+
+    device1.setSerialNumber("SN987654321");
+    EXPECT_THROW(db.updateDevice(device1), std::runtime_error);
+
+    auto updatedDevices = db.getDevicesByCustomerId(customer.getId());
+    ASSERT_EQ(updatedDevices.size(), 2);
+    EXPECT_EQ(updatedDevices[0].getSerialNumber(), "SN123456789");
+    EXPECT_EQ(updatedDevices[1].getSerialNumber(), "SN987654321");
+}
