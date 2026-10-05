@@ -271,3 +271,43 @@ bool DatabaseRepairShop::deleteDeviceById(sqlite3_int64 deviceId) {
     return sqlite3_changes(db) > 0;
 
 }
+
+bool DatabaseRepairShop::updateCustomer(const Customer &customer) {
+
+    const char* sql = "UPDATE customers SET name = ?, email = ?, phoneNumber = ? WHERE id = ?;";
+    sqlite3_stmt* rawStmt = nullptr;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 1, customer.getName().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 2, customer.getEmail().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 3, customer.getPhoneNumber().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 4, customer.getId());
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return sqlite3_changes(db) > 0;
+}

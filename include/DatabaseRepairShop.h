@@ -29,6 +29,7 @@ class DatabaseRepairShop {
         std::vector <Device> getDevicesByCustomerId(sqlite3_int64 id);
         bool deleteCustomerById(sqlite3_int64 customerId);
         bool deleteDeviceById(sqlite3_int64 deviceId);
+        bool updateCustomer(const Customer& customer);
 
 
 };
