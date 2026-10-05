@@ -311,3 +311,43 @@ bool DatabaseRepairShop::updateCustomer(const Customer &customer) {
 
     return sqlite3_changes(db) > 0;
 }
+
+bool DatabaseRepairShop::updateDevice(const Device &device) {
+    const char* sql = "UPDATE devices SET brand = ?, model = ?, serialNumber = ? WHERE id = ?;";
+    sqlite3_stmt* rawStmt = nullptr;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 1, device.getBrand().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 2, device.getModel().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 3, device.getSerialNumber().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 4, device.getId());
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return sqlite3_changes(db) > 0;
+
+}

@@ -30,6 +30,7 @@ class DatabaseRepairShop {
         bool deleteCustomerById(sqlite3_int64 customerId);
         bool deleteDeviceById(sqlite3_int64 deviceId);
         bool updateCustomer(const Customer& customer);
+        bool updateDevice(const Device& device);
 
 
 };
