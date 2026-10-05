@@ -135,3 +135,33 @@ TEST_F(DatabaseRepairShopTest, DeleteDeviceByIdSuccessfully) {
 TEST_F(DatabaseRepairShopTest, DeleteDeviceByIdReturnsFalseForNonExistentDevice) {
     EXPECT_FALSE(db.deleteDeviceById(9999));
 }
+
+TEST_F(DatabaseRepairShopTest, UpdateCustomerSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    customer.setName("Jane Doe");
+    customer.setEmail("jane.doe@gmail.com");
+    customer.setPhoneNumber("+987654321");
+    EXPECT_TRUE(db.updateCustomer(customer));
+
+    auto updatedCustomer = db.getCustomerById(customer.getId());
+    ASSERT_TRUE(updatedCustomer.has_value());
+    EXPECT_EQ(updatedCustomer->getName(), "Jane Doe");
+    EXPECT_EQ(updatedCustomer->getEmail(), "jane.doe@gmail.com");
+    EXPECT_EQ(updatedCustomer->getPhoneNumber(), "+987654321");
+}
+
+TEST_F(DatabaseRepairShopTest, UpdateCustomerWithDuplicateEmailThrowsError) {
+    Customer customer1("John Doe", "john.doe@gmail.com", "+12365792");
+    Customer customer2("Jane Doe", "jane.doe@gmail.com", "+987654321");
+    EXPECT_NO_THROW(db.addCustomer(customer1));
+    EXPECT_NO_THROW(db.addCustomer(customer2));
+    customer1.setEmail("jane.doe@gmail.com");
+    EXPECT_THROW(db.updateCustomer(customer1), std::runtime_error);
+
+    auto updatedCustomer1 = db.getCustomerById(customer1.getId());
+    ASSERT_TRUE(updatedCustomer1.has_value());
+    EXPECT_EQ(updatedCustomer1->getEmail(), "john.doe@gmail.com");
+}
+
+
