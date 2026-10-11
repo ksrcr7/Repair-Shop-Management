@@ -22,6 +22,7 @@ add_library(RepairShopManagementSystemLib
     src/StringUtils.cpp
     src/Customer.cpp
     src/DatabaseRepairShop.cpp
+    src/RepairTicket.cpp
 )
 
 target_include_directories(
@@ -49,6 +50,7 @@ add_executable(RepairShopTests
     tests/DeviceTests.cpp
     tests/CustomerTests.cpp
     tests/DatabaseTests.cpp
+    tests/RepairTicketTests.cpp
 )
 
 target_link_libraries(
