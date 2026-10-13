@@ -463,4 +463,47 @@ std::vector<RepairTicket> DatabaseRepairShop::getRepairTicketsByDeviceId(sqlite3
     return result;
 }
 
+bool DatabaseRepairShop::updateRepairTicket(const RepairTicket &ticket) {
+    const char* sql = "UPDATE repairTickets SET problemDescription = ?, status = ?, estimatedCostCents = ? WHERE id = ?;";
 
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 1, ticket.getProblemDescription().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 2, RepairTicket::statusToString(ticket.getStatus()).c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    auto estimatedCost = ticket.getEstimatedCostCents();
+    if (estimatedCost) {
+        rc = sqlite3_bind_int64(stmt.get(), 3, *estimatedCost);
+    } 
+    else {
+        rc = sqlite3_bind_null(stmt.get(), 3);
+    }
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 4, ticket.getId());
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return sqlite3_changes(db) > 0;
+}
