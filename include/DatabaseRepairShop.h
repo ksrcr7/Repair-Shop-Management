@@ -5,6 +5,7 @@
 #include <vector>
 #include "Device.h"
 #include "Customer.h"
+#include "RepairTicket.h"
 
 
 
@@ -15,6 +16,7 @@ class DatabaseRepairShop {
         std::string dbFilePath;
         void createDeviceTable();
         void createCustomerTable();
+        void createRepairTicketTable();
         [[noreturn]] void throwSQLiteError() const;
 
     public:
@@ -31,6 +33,9 @@ class DatabaseRepairShop {
         bool deleteDeviceById(sqlite3_int64 deviceId);
         bool updateCustomer(const Customer& customer);
         bool updateDevice(const Device& device);
+
+        void addRepairTicket(RepairTicket& ticket);
+        std::vector<RepairTicket> getRepairTicketsByDeviceId(sqlite3_int64 deviceId);
 
 
 };

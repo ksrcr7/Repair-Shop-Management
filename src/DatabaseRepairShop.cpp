@@ -32,6 +32,22 @@ void DatabaseRepairShop::createCustomerTable() {
     }                  
 }
 
+void DatabaseRepairShop::createRepairTicketTable() {
+    const char* sql = "CREATE TABLE IF NOT EXISTS repairTickets ("
+                      "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                      "deviceId INTEGER NOT NULL,"
+                      "problemDescription TEXT NOT NULL,"
+                      "status TEXT NOT NULL,"
+                      "estimatedCostCents INTEGER,"
+                      "FOREIGN KEY(deviceId) REFERENCES devices(id)"
+                      ");";
+
+    int rc = sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+}
+
 void DatabaseRepairShop::throwSQLiteError() const {
     throw std::runtime_error(sqlite3_errmsg(db));
 }
@@ -58,6 +74,7 @@ DatabaseRepairShop::DatabaseRepairShop(const std::string &path) : dbFilePath(pat
     
         createCustomerTable();
         createDeviceTable();
+        createRepairTicketTable();
     }
 
     catch(...){
@@ -351,3 +368,99 @@ bool DatabaseRepairShop::updateDevice(const Device &device) {
     return sqlite3_changes(db) > 0;
 
 }
+
+void DatabaseRepairShop::addRepairTicket(RepairTicket &ticket) {
+    const char* sql = "INSERT INTO repairTickets (deviceId, problemDescription, status, estimatedCostCents) VALUES (?,?,?,?);";
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, ticket.getDeviceId());
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 2, ticket.getProblemDescription().c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_text(stmt.get(), 3, RepairTicket::statusToString(ticket.getStatus()).c_str(), -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    auto estimatedCost = ticket.getEstimatedCostCents();
+    if (estimatedCost) {
+        rc = sqlite3_bind_int64(stmt.get(), 4, *estimatedCost);
+    } 
+    else {
+        rc = sqlite3_bind_null(stmt.get(), 4);
+    }
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_step(stmt.get());
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    sqlite3_int64 newId = sqlite3_last_insert_rowid(db);
+    ticket.setId(newId);
+
+
+}
+
+std::vector<RepairTicket> DatabaseRepairShop::getRepairTicketsByDeviceId(sqlite3_int64 deviceId) {
+
+    std::vector<RepairTicket> result;
+    const char* sql = "SELECT id, problemDescription, status, estimatedCostCents FROM repairTickets WHERE deviceId = ? ORDER BY id;";
+
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    rc = sqlite3_bind_int64(stmt.get(), 1, deviceId);
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    while ((rc = sqlite3_step(stmt.get())) == SQLITE_ROW) {
+        sqlite3_int64 ticketId = sqlite3_column_int64(stmt.get(), 0);
+        const char* problemDescription = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1));
+        const char* statusStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
+        std::optional<sqlite3_int64> estimatedCostCents;
+
+        if (sqlite3_column_type(stmt.get(), 3) != SQLITE_NULL) {
+            estimatedCostCents = sqlite3_column_int64(stmt.get(), 3);
+        }
+
+        RepairTicket::Status status = RepairTicket::stringToStatus(statusStr);
+        RepairTicket ticket(deviceId, problemDescription);
+        ticket.setId(ticketId);
+        ticket.setStatus(status);
+        ticket.setEstimatedCostCents(estimatedCostCents);
+
+        result.push_back(ticket);
+
+
+    }
+
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return result;
+}
+
+
