@@ -273,3 +273,58 @@ TEST_F(DatabaseRepairShopTest, UpdateRepairTicketSuccessfully) {
     EXPECT_EQ(tickets[0].getEstimatedCostCents(), 10000);
 
 }
+
+TEST_F(DatabaseRepairShopTest, GetAllActiveRepairTicketsSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    RepairTicket ticket1(device.getId(), "Screen is cracked");
+    RepairTicket ticket2(device.getId(), "Battery not charging");
+    ticket2.updateStatus(RepairTicket::Status::Diagnosed);
+    ticket2.setEstimatedCostCents(15000); // $150.00
+    RepairTicket ticket3(device.getId(), "Camera not working");
+    ticket3.updateStatus(RepairTicket::Status::Diagnosed);
+    ticket3.updateStatus(RepairTicket::Status::InRepair);
+    ticket3.setEstimatedCostCents(20000);
+    RepairTicket ticket4(device.getId(), "Speaker not working");
+    ticket4.updateStatus(RepairTicket::Status::Diagnosed);
+    ticket4.updateStatus(RepairTicket::Status::InRepair);
+    ticket4.updateStatus(RepairTicket::Status::ReadyForPickup);
+    ticket4.setEstimatedCostCents(25000);
+    RepairTicket ticket5(device.getId(), "Microphone not working");
+    ticket5.updateStatus(RepairTicket::Status::Diagnosed);
+    ticket5.updateStatus(RepairTicket::Status::InRepair);
+    ticket5.updateStatus(RepairTicket::Status::ReadyForPickup);
+    ticket5.updateStatus(RepairTicket::Status::Completed);
+    ticket5.setEstimatedCostCents(30000);
+    RepairTicket ticket6(device.getId(), "WiFi not working");
+    ticket6.updateStatus(RepairTicket::Status::Cancelled);
+    
+
+    EXPECT_NO_THROW(db.addRepairTicket(ticket1));
+    EXPECT_NO_THROW(db.addRepairTicket(ticket2));
+    EXPECT_NO_THROW(db.addRepairTicket(ticket3));
+    EXPECT_NO_THROW(db.addRepairTicket(ticket4));
+    EXPECT_NO_THROW(db.addRepairTicket(ticket5));
+    EXPECT_NO_THROW(db.addRepairTicket(ticket6));
+
+    auto activeTickets = db.getAllActiveRepairTickets();
+    ASSERT_EQ(activeTickets.size(), 4);
+    EXPECT_EQ(activeTickets[0].getId(), ticket1.getId());
+    EXPECT_EQ(activeTickets[1].getId(), ticket2.getId());
+    EXPECT_EQ(activeTickets[2].getId(), ticket3.getId());
+    EXPECT_EQ(activeTickets[3].getId(), ticket4.getId());
+
+
+}
+
+TEST_F(DatabaseRepairShopTest, GetAllActiveRepairTicketsReturnsEmptyWhenNoActiveTickets) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+
+    auto activeTickets = db.getAllActiveRepairTickets();
+    ASSERT_EQ(activeTickets.size(), 0);
+}
