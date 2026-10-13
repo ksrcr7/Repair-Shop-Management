@@ -127,3 +127,10 @@ TEST(RepairTicketTests, CannotTransitionFromCompletedStatus) {
 
     EXPECT_EQ(ticket.getStatus(), RepairTicket::Status::Completed);
 }
+
+TEST(RepairTicketTests, StringToStatusRejectsUnknownStatus) {
+    EXPECT_THROW(
+        RepairTicket::stringToStatus("SomethingWrong"),
+        std::invalid_argument
+    );
+}
