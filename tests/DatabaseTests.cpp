@@ -199,3 +199,57 @@ TEST_F(DatabaseRepairShopTest, UpdateDeviceWithDuplicateSerialNumberThrowsError)
     EXPECT_EQ(updatedDevices[0].getSerialNumber(), "SN123456789");
     EXPECT_EQ(updatedDevices[1].getSerialNumber(), "SN987654321");
 }
+
+TEST_F(DatabaseRepairShopTest, AddRepairTicketSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    RepairTicket ticket(device.getId(), "Screen is cracked");
+    EXPECT_NO_THROW(db.addRepairTicket(ticket));
+
+    EXPECT_GT(ticket.getId(), 0);
+}
+
+TEST_F(DatabaseRepairShopTest, AddRepairTicketToNonExistentDeviceThrowsError) {
+    RepairTicket ticket(9999, "Screen is cracked");
+    EXPECT_THROW(db.addRepairTicket(ticket), std::runtime_error);
+}
+
+TEST_F(DatabaseRepairShopTest, GetRepairTicketsByDeviceIdSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    
+    RepairTicket ticket1(device.getId(), "Screen is cracked");
+    RepairTicket ticket2(device.getId(), "Battery not charging");
+    ticket2.updateStatus(RepairTicket::Status::Diagnosed);
+    ticket2.updateStatus(RepairTicket::Status::InRepair);
+    ticket2.setEstimatedCostCents(5000); // $50.00
+
+    EXPECT_NO_THROW(db.addRepairTicket(ticket1));
+    EXPECT_NO_THROW(db.addRepairTicket(ticket2));
+
+    auto tickets = db.getRepairTicketsByDeviceId(device.getId());
+    ASSERT_EQ(tickets.size(), 2);
+
+    EXPECT_EQ(tickets[0].getId(), ticket1.getId());
+    EXPECT_EQ(tickets[0].getProblemDescription(), "Screen is cracked");
+    EXPECT_EQ(tickets[0].getStatus(), RepairTicket::Status::Received);
+    EXPECT_EQ(tickets[1].getId(), ticket2.getId());
+    EXPECT_EQ(tickets[1].getProblemDescription(), "Battery not charging");
+    EXPECT_EQ(tickets[1].getStatus(), RepairTicket::Status::InRepair);
+    EXPECT_EQ(tickets[1].getEstimatedCostCents(), 5000);
+
+}
+
+TEST_F(DatabaseRepairShopTest, ReturnsEmptyRepairTicketsForDeviceWithNoTickets) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+
+    auto tickets = db.getRepairTicketsByDeviceId(device.getId());
+    EXPECT_TRUE(tickets.empty());
+}
