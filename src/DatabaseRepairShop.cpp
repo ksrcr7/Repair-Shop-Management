@@ -507,3 +507,42 @@ bool DatabaseRepairShop::updateRepairTicket(const RepairTicket &ticket) {
 
     return sqlite3_changes(db) > 0;
 }
+
+std::vector<RepairTicket> DatabaseRepairShop::getAllActiveRepairTickets() {
+    std::vector<RepairTicket> result;
+    const char* sql = "SELECT id, deviceId, problemDescription, status, estimatedCostCents FROM repairTickets WHERE status != 'Completed' AND status != 'Cancelled' ORDER BY id;";
+
+    sqlite3_stmt* rawStmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &rawStmt, nullptr);
+    UniqueStatementPtr stmt(rawStmt);
+
+    if (rc != SQLITE_OK) {
+        throwSQLiteError();
+    }
+
+    while ((rc = sqlite3_step(stmt.get())) == SQLITE_ROW) {
+        sqlite3_int64 ticketId = sqlite3_column_int64(stmt.get(), 0);
+        sqlite3_int64 deviceId = sqlite3_column_int64(stmt.get(), 1);
+        const char* problemDescription = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
+        const char* statusStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3));
+        std::optional<sqlite3_int64> estimatedCostCents;
+
+        if (sqlite3_column_type(stmt.get(), 4) != SQLITE_NULL) {
+            estimatedCostCents = sqlite3_column_int64(stmt.get(), 4);
+        }
+
+        RepairTicket::Status status = RepairTicket::stringToStatus(statusStr);
+        RepairTicket ticket(deviceId, problemDescription);
+        ticket.setId(ticketId);
+        ticket.setStatus(status);
+        ticket.setEstimatedCostCents(estimatedCostCents);
+
+        result.push_back(ticket);
+    }
+
+    if (rc != SQLITE_DONE) {
+        throwSQLiteError();
+    }
+
+    return result;
+}

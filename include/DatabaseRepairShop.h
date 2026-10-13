@@ -37,6 +37,7 @@ class DatabaseRepairShop {
         void addRepairTicket(RepairTicket& ticket);
         std::vector<RepairTicket> getRepairTicketsByDeviceId(sqlite3_int64 deviceId);
         bool updateRepairTicket(const RepairTicket& ticket);
+        std::vector<RepairTicket> getAllActiveRepairTickets();
 
 
 };
