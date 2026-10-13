@@ -5,6 +5,8 @@
 #include <optional>
 
 class RepairTicket{
+    friend class DatabaseRepairShop;
+    
     public:
         RepairTicket(sqlite3_int64 newDeviceId, const std::string& newProblemDescription);
         enum class Status {Received, Diagnosed, InRepair, ReadyForPickup, Completed, Cancelled};
@@ -16,6 +18,8 @@ class RepairTicket{
 
         void setEstimatedCostCents(std::optional<sqlite3_int64> newEstimatedCostCents);
         void updateStatus(Status newStatus);
+        static std::string statusToString(Status status);
+        static Status stringToStatus(const std::string& statusStr);
    
    
     private:
@@ -31,6 +35,7 @@ class RepairTicket{
         void validateDeviceId(sqlite3_int64 newDeviceId) const;
         void validateEstimatedCostCents(std::optional<sqlite3_int64> newEstimatedCostCents) const;
         bool isValidStatusTransition(Status newStatus) const;
+        void setStatus(Status newStatus);
 
     
 

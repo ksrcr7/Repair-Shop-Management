@@ -58,6 +58,11 @@ bool RepairTicket::isValidStatusTransition(Status newStatus) const {
     
 }
 
+void RepairTicket::setStatus(Status newStatus) {
+    
+    status = newStatus;
+}
+
 RepairTicket::RepairTicket(sqlite3_int64 newDeviceId, const std::string &newProblemDescription) : 
 deviceId(newDeviceId),
 problemDescription(trim(newProblemDescription)),
@@ -105,4 +110,42 @@ void RepairTicket::updateStatus(Status newStatus)
     } 
 
     status = newStatus;
+}
+
+std::string RepairTicket::statusToString(Status status) {
+    
+    switch (status) {
+        case Status::Received:
+            return "Received";
+        case Status::Diagnosed:
+            return "Diagnosed";
+        case Status::InRepair:
+            return "InRepair";
+        case Status::ReadyForPickup:
+            return "ReadyForPickup";
+        case Status::Completed:
+            return "Completed";
+        case Status::Cancelled:
+            return "Cancelled";
+        default:
+            throw std::invalid_argument("Unknown status");
+    }
+}
+
+RepairTicket::Status RepairTicket::stringToStatus(const std::string &statusStr) {
+    if (statusStr == "Received") {
+        return Status::Received;
+    } else if (statusStr == "Diagnosed") {
+        return Status::Diagnosed;
+    } else if (statusStr == "InRepair") {
+        return Status::InRepair;
+    } else if (statusStr == "ReadyForPickup") {
+        return Status::ReadyForPickup;
+    } else if (statusStr == "Completed") {
+        return Status::Completed;
+    } else if (statusStr == "Cancelled") {
+        return Status::Cancelled;
+    } else {
+        throw std::invalid_argument("Unknown status");
+    }
 }
