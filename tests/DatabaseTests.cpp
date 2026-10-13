@@ -253,3 +253,23 @@ TEST_F(DatabaseRepairShopTest, ReturnsEmptyRepairTicketsForDeviceWithNoTickets) 
     auto tickets = db.getRepairTicketsByDeviceId(device.getId());
     EXPECT_TRUE(tickets.empty());
 }
+
+TEST_F(DatabaseRepairShopTest, UpdateRepairTicketSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    RepairTicket ticket(device.getId(), "Screen is cracked");
+    EXPECT_NO_THROW(db.addRepairTicket(ticket));
+
+    ticket.updateStatus(RepairTicket::Status::Diagnosed);
+    ticket.setEstimatedCostCents(10000); // $100.00
+    EXPECT_TRUE(db.updateRepairTicket(ticket));
+
+    auto tickets = db.getRepairTicketsByDeviceId(device.getId());
+    ASSERT_EQ(tickets.size(), 1);
+    EXPECT_EQ(tickets[0].getId(), ticket.getId());
+    EXPECT_EQ(tickets[0].getStatus(), RepairTicket::Status::Diagnosed);
+    EXPECT_EQ(tickets[0].getEstimatedCostCents(), 10000);
+
+}
