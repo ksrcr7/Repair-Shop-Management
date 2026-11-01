@@ -23,6 +23,7 @@ add_library(RepairShopManagementSystemLib
     src/Customer.cpp
     src/DatabaseRepairShop.cpp
     src/RepairTicket.cpp
+    src/RepairShopCLI.cpp
 )
 
 target_include_directories(

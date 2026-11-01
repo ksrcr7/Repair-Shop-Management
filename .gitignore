@@ -32,3 +32,5 @@ database/*.db
 *.gcno
 coverage.info
 coverage/
+build/
+*.db

@@ -328,3 +328,25 @@ TEST_F(DatabaseRepairShopTest, GetAllActiveRepairTicketsReturnsEmptyWhenNoActive
     auto activeTickets = db.getAllActiveRepairTickets();
     ASSERT_EQ(activeTickets.size(), 0);
 }
+
+TEST_F(DatabaseRepairShopTest, GetRepairTicketByIdSuccessfully) {
+    Customer customer("John Doe", "john.doe@gmail.com", "+12365792");
+    Device device("Samsung", "Galaxy S21", "SN123456789");
+    EXPECT_NO_THROW(db.addCustomer(customer));
+    EXPECT_NO_THROW(db.addDevice(customer.getId(), device));
+    RepairTicket ticket(device.getId(), "Screen is cracked");
+    EXPECT_NO_THROW(db.addRepairTicket(ticket));
+
+    auto foundTicket = db.getRepairTicketById(ticket.getId());
+    ASSERT_TRUE(foundTicket.has_value());
+    EXPECT_EQ(foundTicket.value().getId(), ticket.getId());
+    EXPECT_EQ(foundTicket.value().getDeviceId(), ticket.getDeviceId());
+    EXPECT_EQ(foundTicket.value().getProblemDescription(), ticket.getProblemDescription());
+    EXPECT_EQ(foundTicket.value().getStatus(), ticket.getStatus());
+    EXPECT_FALSE(foundTicket.value().getEstimatedCostCents().has_value());
+}
+
+TEST_F(DatabaseRepairShopTest, GetRepairTicketByIdReturnsEmptyForNonExistentTicket) {
+    auto foundTicket = db.getRepairTicketById(9999);
+    ASSERT_FALSE(foundTicket.has_value());
+}
