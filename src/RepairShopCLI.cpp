@@ -1,22 +1,75 @@
 #include "RepairShopCLI.h"
 #include <iomanip>
 #include <cmath>
+#include <cctype>
 
 sqlite3_int64 readValidID() {
     while (true) {
         sqlite3_int64 id;
-        std::cin >> id;
 
-        if (std::cin.fail() || id <= 0) {
-            std::cin.clear(); 
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
-            std::cout << "Invalid input. Please enter a positive integer for the ID: ";
-        } 
-        else {
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
+        if (!(std::cin >> id)) {
+            if (std::cin.eof()) {
+                throw std::runtime_error("Input stream closed.");
+            }
+
+            std::cin.clear();
+            std::cin.ignore(
+                std::numeric_limits<std::streamsize>::max(), '\n'
+            );
+
+            std::cout << "Invalid ID. Enter a positive integer: ";
+            continue;
+        }
+
+        std::cin.ignore(
+            std::numeric_limits<std::streamsize>::max(), '\n'
+        );
+
+        if (id > 0) {
             return id;
         }
+
+        std::cout << "ID must be positive. Try again: ";
     }
+}
+
+sqlite3_int64 parseCostToCents(const std::string& input) {
+    if (input.empty()) {
+        throw std::invalid_argument("Cost cannot be empty.");
+    }
+
+    const size_t dot = input.find('.');
+
+    if (dot != std::string::npos &&
+        input.find('.', dot + 1) != std::string::npos) {
+        throw std::invalid_argument("Invalid cost format.");
+    }
+
+    const std::string euros = input.substr(0, dot);
+    const std::string cents =
+        dot == std::string::npos ? "" : input.substr(dot + 1);
+
+    if (euros.empty() ||
+        (dot != std::string::npos && cents.empty()) ||
+        cents.size() > 2) {
+        throw std::invalid_argument("Invalid cost format.");
+    }
+
+    for (unsigned char ch : euros + cents) {
+        if (!std::isdigit(ch)) {
+            throw std::invalid_argument("Cost must be a non-negative number.");
+        }
+    }
+
+    const auto whole = std::stoll(euros);
+    const auto fraction = cents.empty() ? 0 :
+                          std::stoll(cents) * (cents.size() == 1 ? 10 : 1);
+
+    if (whole > (std::numeric_limits<sqlite3_int64>::max() - fraction) / 100) {
+        throw std::out_of_range("Cost is too large.");
+    }
+
+    return whole * 100 + fraction;
 }
 
 void RepairShopCLI::addCustomer() {
@@ -49,20 +102,20 @@ void RepairShopCLI::registerDevice() {
 
     std::cout << "\n--- Register Device ---\n";
    
-   
-    std::cout << "Enter customer ID: ";
-    customerId = readValidID();
-    
-    std::cout << "Enter device brand: ";
-    std::getline(std::cin, brand);
-
-    std::cout << "Enter device model: ";
-    std::getline(std::cin, model);
-
-    std::cout << "Enter device serial number: ";
-    std::getline(std::cin, serialNumber);
-
     try {
+        std::cout << "Enter customer ID: ";
+        customerId = readValidID();
+        
+        std::cout << "Enter device brand: ";
+        std::getline(std::cin, brand);
+
+        std::cout << "Enter device model: ";
+        std::getline(std::cin, model);
+
+        std::cout << "Enter device serial number: ";
+        std::getline(std::cin, serialNumber);
+
+    
         Device newDevice(brand, model, serialNumber);
         db.addDevice(customerId, newDevice);
         std::cout << "Device registered successfully with ID: " << newDevice.getId() << std::endl;
@@ -80,13 +133,14 @@ void RepairShopCLI::createRepairTicket() {
     std::string problemDescription;
 
     std::cout << "\n--- Create Repair Ticket ---\n";
-    std::cout << "Enter device ID: ";
-    deviceId = readValidID();
-
-    std::cout << "Enter problem description: ";
-    std::getline(std::cin, problemDescription);
-
     try {
+        std::cout << "Enter device ID: ";
+        deviceId = readValidID();
+
+        std::cout << "Enter problem description: ";
+        std::getline(std::cin, problemDescription);
+
+    
         RepairTicket newTicket(deviceId, problemDescription);
         db.addRepairTicket(newTicket);
         std::cout << "Repair ticket created successfully with ID: " << newTicket.getId() << std::endl;
@@ -99,10 +153,11 @@ void RepairShopCLI::createRepairTicket() {
 void RepairShopCLI::updateRepairTicket() {
     sqlite3_int64 ticketId;
     std::cout << "\n--- Update Repair Ticket ---\n";
-    std::cout << "Enter repair ticket ID: ";
-    ticketId = readValidID();
-
     try {
+        std::cout << "Enter repair ticket ID: ";
+        ticketId = readValidID();
+
+    
         auto ticketOpt = db.getRepairTicketById(ticketId);
         if (!ticketOpt.has_value()) {
             std::cout << "Repair ticket with ID " << ticketId << " not found." << std::endl;
@@ -144,12 +199,15 @@ void RepairShopCLI::updateRepairTicket() {
                         std::getline(std::cin, newStatusStr);
                         try {
                             RepairTicket::Status newStatus = RepairTicket::stringToStatus(newStatusStr);
-                            ticketOpt->updateStatus(newStatus);
-                            if (db.updateRepairTicket(*ticketOpt)) {
-                                std::cout << "Repair ticket status updated successfully." << std::endl;
-                            } 
+                            RepairTicket updatedTicket = *ticketOpt;
+                            updatedTicket.updateStatus(newStatus);
+
+                            if (db.updateRepairTicket(updatedTicket)) {
+                                *ticketOpt = updatedTicket;
+                                std::cout << "Repair ticket status updated successfully.\n";
+                            }
                             else {
-                                std::cout << "Failed to update repair ticket status." << std::endl;
+                                std::cout << "Failed to update repair ticket status.\n";
                             }
                         } 
                         catch (const std::exception &e) {
@@ -164,16 +222,16 @@ void RepairShopCLI::updateRepairTicket() {
                         std::string costInput;
                         std::getline(std::cin, costInput);
                         try {
+                            RepairTicket updatedTicket = *ticketOpt;
                             if (costInput.empty()) {
-                                ticketOpt->setEstimatedCostCents(std::nullopt);
+                                updatedTicket.setEstimatedCostCents(std::nullopt);
                             } 
                             else {
-                                double newCost = std::stod(costInput);
-                                sqlite3_int64 newCostCents = static_cast<sqlite3_int64>(std::llround(newCost * 100));
-                                ticketOpt->setEstimatedCostCents(newCostCents);
-
+                                sqlite3_int64 newCostCents = parseCostToCents(costInput);
+                                updatedTicket.setEstimatedCostCents(newCostCents);
                             }
-                            if (db.updateRepairTicket(*ticketOpt)) {
+                            if (db.updateRepairTicket(updatedTicket)) {
+                                *ticketOpt = updatedTicket;
                                 std::cout << "Repair ticket estimated cost updated successfully." << std::endl;
                             } 
                             else {
@@ -207,11 +265,12 @@ void RepairShopCLI::showCustomerDevices() {
     sqlite3_int64 customerID;
 
     std::cout << "\n--- Show Customer Devices ---\n";
-    std::cout << "Enter customer ID : ";
-
-    customerID = readValidID();
-
     try {
+        std::cout << "Enter customer ID : ";
+
+        customerID = readValidID();
+
+   
         auto result = db.getDevicesByCustomerId(customerID);
 
         if(result.empty()){
@@ -239,10 +298,11 @@ void RepairShopCLI::showDeviceRepairHistory() {
     sqlite3_int64 DeviceID;
 
     std::cout << "\n---- Show Device RepairTicket History ----\n";
-    std::cout << "Enter Device ID : ";
-    DeviceID = readValidID();
-
     try{
+        
+        std::cout << "Enter Device ID : ";
+        DeviceID = readValidID();
+
         auto result = db.getRepairTicketsByDeviceId(DeviceID);
 
         if(result.empty()){
@@ -257,7 +317,9 @@ void RepairShopCLI::showDeviceRepairHistory() {
             
             auto cost = temp.getEstimatedCostCents();
             if(cost.has_value()){
-                std::cout << "Estimated Cost : " << *cost / 100 << std::endl;
+                std::cout << "Estimated Cost: "
+                << std::fixed << std::setprecision(2)
+                << *cost / 100.0 << " EUR\n";
             }
 
             else{
@@ -289,11 +351,14 @@ void RepairShopCLI::showAllActiveRepairTickets() {
             std::cout << "Problem : " << temp.getProblemDescription() << std::endl;
             std::cout << "Status : " << RepairTicket::statusToString(temp.getStatus()) << std::endl;
 
-            if(temp.getEstimatedCostCents().has_value()) {
-                double cost = temp.getEstimatedCostCents().value() / 100;
-                std::cout << "Estimated Cost: " << cost << " EUR\n";
-            }
-            else{
+            if (temp.getEstimatedCostCents().has_value()) {
+                double cost = temp.getEstimatedCostCents().value() / 100.0;
+
+                std::cout << "Estimated Cost: "
+                << std::fixed << std::setprecision(2)
+                << cost << " EUR\n";
+        }
+            else {
                 std::cout << "Estimated Cost: Not set\n";
             }
         }
@@ -314,6 +379,11 @@ void RepairShopCLI::showAllActiveRepairTickets() {
 void RepairShopCLI::run()
 {
     while (true) {
+        if (std::cin.eof()) {
+        std::cout << "\nInput closed. Exiting program.\n";
+        return;
+    }
+
         int choice;
         std::cout << "Repair Shop Management System" << std::endl;
         std::cout << "1. Add Customer" << std::endl;
@@ -329,9 +399,17 @@ void RepairShopCLI::run()
         std::cin >> choice;
 
         if (std::cin.fail()) {
-            std::cin.clear(); 
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
-            std::cout << "Invalid input. Please enter a number." << std::endl;
+            if (std::cin.eof()) {
+            std::cout << "\nInput closed. Exiting program.\n";
+            return;
+        }
+
+            std::cin.clear();
+            std::cin.ignore(
+            std::numeric_limits<std::streamsize>::max(), '\n'
+        );
+
+            std::cout << "Invalid input. Please enter a number.\n";
             continue;
         }
 
